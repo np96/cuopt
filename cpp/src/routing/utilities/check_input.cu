@@ -19,6 +19,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/pair.h>
+#include <thrust/tuple.h>
 #include <cuda/std/functional>
 
 #include <unordered_set>
