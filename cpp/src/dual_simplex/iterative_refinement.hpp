@@ -7,6 +7,7 @@
 #pragma once
 
 #include <thrust/execution_policy.h>
+#include <thrust/extrema.h>
 #include <thrust/fill.h>
 #include <thrust/inner_product.h>
 #include <thrust/reduce.h>

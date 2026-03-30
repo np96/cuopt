@@ -10,7 +10,9 @@
 #include <mip/mip_constants.hpp>
 #include <mip/utils.cuh>
 
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
+#include <thrust/tuple.h>
 #include <utilities/copy_helpers.hpp>
 #include <utilities/timer.hpp>
 

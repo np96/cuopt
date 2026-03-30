@@ -32,6 +32,8 @@
 #include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
 
+#include <thrust/tuple.h>
+
 namespace cuopt {
 namespace routing {
 namespace detail {

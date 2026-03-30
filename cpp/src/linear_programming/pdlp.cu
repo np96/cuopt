@@ -35,6 +35,8 @@
 
 #include <thrust/count.h>
 #include <thrust/extrema.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/logical.h>
 
 #include <optional>
 #include <unordered_set>
