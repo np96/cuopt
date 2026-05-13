@@ -233,7 +233,7 @@ bool guided_ejection_search_t<i_t, f_t, REQUEST>::squeeze_all_and_save()
   squeeze_save_state.copy_device_solution(*solution_ptr);
   auto save_ep_size = EP.size();
   squeeze_all_ep();
-  constexpr double ls_weights_after_squeeze[] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
+  constexpr double ls_weights_after_squeeze[] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
   static_assert(sizeof(ls_weights_after_squeeze) / sizeof(double) == (size_t)dim_t::SIZE);
   constexpr bool include_objective = false;
   auto original_weights            = local_search_ptr_->move_candidates.weights;

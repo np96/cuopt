@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -241,6 +241,18 @@ void populate_fleet_info(data_model_view_t<i_t, f_t> const& data_model,
     raft::copy(fleet_info_.v_max_times_.data(), vehicle_max_times.data(), fleet_size, stream_view);
     is_homogenous = is_homogenous &&
                     all_entries_are_equal(handle_ptr_, fleet_info_.v_max_times_.data(), fleet_size);
+  }
+
+  if (auto vehicle_max_route_sizes = data_model.get_vehicle_max_route_sizes();
+      !vehicle_max_route_sizes.empty()) {
+    fleet_info_.v_max_route_sizes_.resize(fleet_size, stream_view);
+    raft::copy(fleet_info_.v_max_route_sizes_.data(),
+               vehicle_max_route_sizes.data(),
+               fleet_size,
+               stream_view);
+    is_homogenous =
+      is_homogenous &&
+      all_entries_are_equal(handle_ptr_, fleet_info_.v_max_route_sizes_.data(), fleet_size);
   }
 
   if (auto vehicle_fixed_costs = data_model.get_vehicle_fixed_costs();

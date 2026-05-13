@@ -499,6 +499,15 @@ void data_model_view_t<i_t, f_t>::set_vehicle_max_times(f_t const* vehicle_max_t
 }
 
 template <typename i_t, typename f_t>
+void data_model_view_t<i_t, f_t>::set_vehicle_max_route_sizes(i_t const* vehicle_max_route_sizes)
+{
+  cuopt_expects(vehicle_max_route_sizes != nullptr,
+                error_type_t::ValidationError,
+                "vehicle_max_route_sizes cannot be null");
+  vehicle_max_route_sizes_ = raft::device_span<i_t const>(vehicle_max_route_sizes, fleet_size_);
+}
+
+template <typename i_t, typename f_t>
 void data_model_view_t<i_t, f_t>::set_vehicle_fixed_costs(f_t const* vehicle_fixed_costs)
 {
   cuopt_expects(vehicle_fixed_costs != nullptr,
@@ -738,6 +747,13 @@ template <typename i_t, typename f_t>
 raft::device_span<f_t const> data_model_view_t<i_t, f_t>::get_vehicle_max_times() const noexcept
 {
   return vehicle_max_times_;
+}
+
+template <typename i_t, typename f_t>
+raft::device_span<i_t const> data_model_view_t<i_t, f_t>::get_vehicle_max_route_sizes()
+  const noexcept
+{
+  return vehicle_max_route_sizes_;
 }
 
 template <typename i_t, typename f_t>

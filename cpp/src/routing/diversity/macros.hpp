@@ -37,7 +37,13 @@ constexpr int VEHICLE_FIXED_COST = 8;
 // order-tag incompatibility (event-based), parallel to dim_t::INCOMPAT
 constexpr int INCOMPAT = 9;
 
-constexpr int NDIM = 10;
+constexpr int ROUTE_SIZE = 10;
+
+constexpr int NDIM = 11;
+
+// Keep diversity-layer NDIM in lockstep with the canonical dim_t enum.
+static_assert(NDIM == (int)cuopt::routing::detail::dim_t::SIZE,
+              "NDIM in diversity/macros.hpp is out of sync with dim_t::SIZE");
 
 #define MACHINE_EPSILON 0.000001
 #define MOVE_EPSILON    0.0001

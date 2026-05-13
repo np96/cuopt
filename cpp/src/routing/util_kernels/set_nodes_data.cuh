@@ -77,6 +77,10 @@ __device__ void set_route_data(typename problem_t<i_t, f_t>::view_t const& probl
       // tag_mask and delta of both depot positions are already 0 from
       // create_depot_node; no need to write them here.
     }
+    if (problem.dimensions_info.has_dimension(dim_t::ROUTE_SIZE)) {
+      route.template get_dim<dim_t::ROUTE_SIZE>().fwd_count[0]             = 0;
+      route.template get_dim<dim_t::ROUTE_SIZE>().bwd_count[n_nodes_route] = 0;
+    }
   }
 }
 

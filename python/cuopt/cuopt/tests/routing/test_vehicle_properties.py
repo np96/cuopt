@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import numpy as np
@@ -80,3 +80,69 @@ def test_vehicle_locations():
         vehicle_route = routes[routes["truck_id"] == truck_id]
         assert vehicle_route["location"].iloc[0] == 4
         assert vehicle_route["location"].iloc[-1] == 10
+
+
+# ----- Vehicle max route sizes -----
+
+
+def test_vehicle_max_route_sizes():
+    """
+    Hard per-vehicle limit on number of service-node visits. With 6 orders
+    and 3 vehicles each capped at 2, every vehicle must take exactly 2 stops.
+    """
+    n_locations = 7  # depot + 6 customers
+    n_vehicles = 3
+    max_size = 2
+
+    # Uniform symmetric cost matrix; depot self-cost = 0.
+    cost = cudf.DataFrame(
+        [
+            [0 if i == j else 10 for j in range(n_locations)]
+            for i in range(n_locations)
+        ],
+        dtype=np.float32,
+    )
+    vehicle_max_route_sizes = cudf.Series(
+        [max_size] * n_vehicles, dtype=np.int32
+    )
+
+    d = routing.DataModel(n_locations, n_vehicles)
+    d.add_cost_matrix(cost)
+    d.set_vehicle_max_route_sizes(vehicle_max_route_sizes)
+    assert (d.get_vehicle_max_route_sizes() == vehicle_max_route_sizes).all()
+
+    s = routing.SolverSettings()
+    s.set_time_limit(5)
+
+    routing_solution = routing.Solve(d, s)
+    assert routing_solution.get_status() == 0
+
+    route_df = routing_solution.get_route()
+    for truck_id in route_df["truck_id"].unique().to_arrow().to_pylist():
+        truck_rows = route_df[route_df["truck_id"] == truck_id]
+        # Depot node id is 0 when order_locations is unset; non-depot rows are
+        # the per-vehicle service-node count.
+        service_count = int((truck_rows["route"] != 0).sum())
+        assert service_count <= max_size, (
+            f"truck {truck_id} served {service_count} orders (limit {max_size})"
+        )
+
+
+def test_vehicle_max_route_sizes_validation_fails_on_zero():
+    """validate_positive should reject a zero or negative entry."""
+    n_locations = 4
+    n_vehicles = 2
+    cost = cudf.DataFrame(
+        [
+            [0 if i == j else 1 for j in range(n_locations)]
+            for i in range(n_locations)
+        ],
+        dtype=np.float32,
+    )
+    d = routing.DataModel(n_locations, n_vehicles)
+    d.add_cost_matrix(cost)
+    try:
+        d.set_vehicle_max_route_sizes(cudf.Series([2, 0], dtype=np.int32))
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError for non-positive max_route_size")
