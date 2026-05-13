@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -34,7 +34,13 @@ constexpr int BREAK = 7;
 
 constexpr int VEHICLE_FIXED_COST = 8;
 
-constexpr int NDIM = 9;
+constexpr int ROUTE_SIZE = 9;
+
+constexpr int NDIM = 10;
+
+// Keep diversity-layer NDIM in lockstep with the canonical dim_t enum.
+static_assert(NDIM == (int)cuopt::routing::detail::dim_t::SIZE,
+              "NDIM in diversity/macros.hpp is out of sync with dim_t::SIZE");
 
 #define MACHINE_EPSILON 0.000001
 #define MOVE_EPSILON    0.0001

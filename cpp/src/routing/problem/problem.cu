@@ -349,6 +349,12 @@ void problem_t<i_t, f_t>::populate_dimensions_info()
     }
   }
 
+  // ROUTE_SIZE dimension info (per-vehicle hard limit on service-node visits)
+  if (!data_view_ptr->get_vehicle_max_route_sizes().empty()) {
+    dimensions_info.enable_dimension(dim_t::ROUTE_SIZE);
+    dimensions_info.route_size_dim.has_max_route_size = true;
+  }
+
   if (data_view_ptr->get_fleet_size() == 1) {
     is_tsp = true;
     loop_over_dimensions(dimensions_info, [&](auto I) {

@@ -1119,6 +1119,40 @@ class DataModel(vehicle_routing_wrapper.DataModel):
         super().set_vehicle_max_times(vehicle_max_times)
 
     @catch_cuopt_exception
+    def set_vehicle_max_route_sizes(self, vehicle_max_route_sizes):
+        """
+        Limits per vehicle the total number of service-node visits in a
+        route. Each service node counts as 1 toward the limit; depot and
+        break nodes do not contribute. For pickup-delivery problems, both
+        the pickup and the delivery are counted, so a route with K
+        pickup-delivery pairs uses 2K of the limit.
+
+        Parameters
+        ----------
+        vehicle_max_route_sizes : cudf.Series dtype - int32
+            Upper bound per vehicle on number of service-node visits.
+
+        Examples
+        --------
+        >>> from cuopt import routing
+        >>> locations = [0,  1,  2,  3]
+        >>> vehicles  = [0, 1]
+        >>> vehicle_max_route_sizes = [2, 3]
+        >>> data_model = routing.DataModel(len(locations), len(vehicles))
+        >>> data_model.set_vehicle_max_route_sizes(
+        >>>     cudf.Series(vehicle_max_route_sizes)
+        >>> )
+        """
+        validate_size(
+            vehicle_max_route_sizes,
+            "vehicle max route sizes",
+            self.get_fleet_size(),
+            "number of vehicles",
+        )
+        validate_positive(vehicle_max_route_sizes, "vehicle max route sizes")
+        super().set_vehicle_max_route_sizes(vehicle_max_route_sizes)
+
+    @catch_cuopt_exception
     def set_vehicle_fixed_costs(self, vehicle_fixed_costs):
         """
         Limits per vehicle primary matrix cost accumulated along a route.
@@ -1342,6 +1376,13 @@ class DataModel(vehicle_routing_wrapper.DataModel):
         Returns max times per vehicles
         """
         return super().get_vehicle_max_times()
+
+    @catch_cuopt_exception
+    def get_vehicle_max_route_sizes(self):
+        """
+        Returns max number of service-node visits per vehicle
+        """
+        return super().get_vehicle_max_route_sizes()
 
     @catch_cuopt_exception
     def get_vehicle_fixed_costs(self):

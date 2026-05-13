@@ -397,6 +397,21 @@ class data_model_view_t {
   void set_vehicle_max_times(f_t const* vehicle_max_times);
 
   /**
+   * @brief Limits the total number of service-node visits in a route.
+   *
+   * Each service node visit contributes 1 toward the limit. For PDP, pickup
+   * and delivery are each counted as 1, so a route with K PD pairs uses 2K
+   * of the limit. Depot nodes do not contribute.
+   *
+   * Pointer must reference `fleet_size` ints. Currently exposed for internal
+   * (C++) use only.
+   *
+   * @param[in] vehicle_max_route_sizes Upper bound per vehicle on number of
+   *            service-node visits.
+   */
+  void set_vehicle_max_route_sizes(i_t const* vehicle_max_route_sizes);
+
+  /**
    * @brief Get cost matrix
    * @return Matrix pointer
    */
@@ -602,6 +617,12 @@ class data_model_view_t {
   raft::device_span<f_t const> get_vehicle_max_times() const noexcept;
 
   /**
+   * @brief Return max number of service-node visits allowed per vehicle
+   * @return per-vehicle max route size, or empty span if unset
+   */
+  raft::device_span<i_t const> get_vehicle_max_route_sizes() const noexcept;
+
+  /**
    * @brief Return cost per vehicle
    * @return cost per route
    */
@@ -650,6 +671,7 @@ class data_model_view_t {
   raft::device_span<f_t const> vehicle_max_costs_{};
   raft::device_span<f_t const> vehicle_max_times_{};
   raft::device_span<f_t const> vehicle_fixed_costs_{};
+  raft::device_span<i_t const> vehicle_max_route_sizes_{};
 
   raft::device_span<i_t const> initial_vehicle_ids_{};
   raft::device_span<i_t const> initial_routes_{};

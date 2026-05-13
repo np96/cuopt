@@ -195,6 +195,7 @@ cdef class DataModel:
         self.vehicle_skip_first_trips = cudf.Series()
         self.vehicle_max_costs = cudf.Series()
         self.vehicle_max_times = cudf.Series()
+        self.vehicle_max_route_sizes = cudf.Series()
         self.vehicle_fixed_costs = cudf.Series()
 
         self.vehicle_order_match = {}
@@ -564,6 +565,20 @@ cdef class DataModel:
             <float*>c_vehicle_max_times
         )
 
+    def set_vehicle_max_route_sizes(self, vehicle_max_route_sizes):
+        self.vehicle_max_route_sizes = type_cast(
+            vehicle_max_route_sizes,
+            np.int32,
+            "vehicle_max_route_sizes"
+        )
+
+        cdef uintptr_t c_vehicle_max_route_sizes = (
+            self.vehicle_max_route_sizes.__cuda_array_interface__['data'][0]
+        )
+        self.c_data_model_view.get().set_vehicle_max_route_sizes(
+            <int*>c_vehicle_max_route_sizes
+        )
+
     def set_vehicle_fixed_costs(self, vehicle_fixed_costs):
         self.vehicle_fixed_costs = type_cast(
             vehicle_fixed_costs,
@@ -694,6 +709,9 @@ cdef class DataModel:
 
     def get_vehicle_max_times(self):
         return self.vehicle_max_times
+
+    def get_vehicle_max_route_sizes(self):
+        return self.vehicle_max_route_sizes
 
     def get_vehicle_fixed_costs(self):
         return self.vehicle_fixed_costs

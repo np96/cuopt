@@ -41,6 +41,7 @@ class fleet_info_t {
       v_max_costs_(0, handle_ptr_->get_stream()),
       v_max_times_(0, handle_ptr_->get_stream()),
       v_fixed_costs_(0, handle_ptr_->get_stream()),
+      v_max_route_sizes_(0, handle_ptr_->get_stream()),
       v_buckets_(0, handle_ptr_->get_stream()),
       v_vehicle_availability_(0, handle_ptr_->get_stream()),
       is_homogenous_(true)
@@ -87,6 +88,7 @@ class fleet_info_t {
     h.max_costs               = host_copy(v_max_costs_, stream);
     h.max_times               = host_copy(v_max_times_, stream);
     h.fixed_costs             = host_copy(v_fixed_costs_, stream);
+    h.max_route_sizes         = host_copy(v_max_route_sizes_, stream);
     h.fleet_order_constraints = fleet_order_constraints_.to_host(stream);
     h.types                   = host_copy(v_types_, stream);
     h.buckets                 = host_copy(v_buckets_, stream);
@@ -125,6 +127,7 @@ class fleet_info_t {
       if (!max_costs.empty()) { info.max_cost = max_costs[vehicle_id]; }
 
       if (!max_times.empty()) { info.max_time = max_times[vehicle_id]; }
+      if (!max_route_sizes.empty()) { info.max_route_size = max_route_sizes[vehicle_id]; }
       info.fixed_cost          = fixed_costs[vehicle_id];
       info.matrices            = matrices.view();
       info.order_service_times = fleet_order_constraints.get_order_service_times(vehicle_id);
@@ -161,6 +164,7 @@ class fleet_info_t {
     std::vector<f_t> max_costs;
     std::vector<f_t> max_times;
     std::vector<f_t> fixed_costs;
+    std::vector<i_t> max_route_sizes;
     std::vector<i_t> vehicle_availability;
     h_mdarray_t<f_t> matrices;
   };
@@ -199,6 +203,7 @@ class fleet_info_t {
     raft::device_span<const f_t> max_costs{};
     raft::device_span<const f_t> max_times{};
     raft::device_span<const f_t> fixed_costs{};
+    raft::device_span<const i_t> max_route_sizes{};
     raft::device_span<const i_t> buckets{};
     raft::device_span<const i_t> vehicle_availability{};
     bool is_homogenous{true};
@@ -228,7 +233,9 @@ class fleet_info_t {
     v.max_costs   = raft::device_span<const f_t>(v_max_costs_.data(), v_max_costs_.size());
     v.max_times   = raft::device_span<const f_t>(v_max_times_.data(), v_max_times_.size());
     v.fixed_costs = raft::device_span<const f_t>(v_fixed_costs_.data(), v_fixed_costs_.size());
-    v.buckets     = raft::device_span<const i_t>(v_buckets_.data(), v_buckets_.size());
+    v.max_route_sizes =
+      raft::device_span<const i_t>(v_max_route_sizes_.data(), v_max_route_sizes_.size());
+    v.buckets = raft::device_span<const i_t>(v_buckets_.data(), v_buckets_.size());
     v.vehicle_availability =
       raft::device_span<const i_t>(v_vehicle_availability_.data(), v_vehicle_availability_.size());
     v.is_homogenous = is_homogenous_;
@@ -272,6 +279,9 @@ class fleet_info_t {
     if (!v_max_times_.is_empty()) {
       info.max_time = v_max_times_.element(vehicle_id, handle_ptr_->get_stream());
     }
+    if (!v_max_route_sizes_.is_empty()) {
+      info.max_route_size = v_max_route_sizes_.element(vehicle_id, handle_ptr_->get_stream());
+    }
     info.fixed_cost          = v_fixed_costs_.element(vehicle_id, handle_ptr_->get_stream());
     info.matrices            = matrices_.view();
     info.order_service_times = fleet_order_constraints_.get_order_service_times(vehicle_id);
@@ -312,6 +322,7 @@ class fleet_info_t {
   rmm::device_uvector<f_t> v_max_costs_;
   rmm::device_uvector<f_t> v_max_times_;
   rmm::device_uvector<f_t> v_fixed_costs_;
+  rmm::device_uvector<i_t> v_max_route_sizes_;
   rmm::device_uvector<i_t> v_buckets_;
   rmm::device_uvector<i_t> v_vehicle_availability_;
   bool is_homogenous_;

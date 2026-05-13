@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -60,6 +60,10 @@ __device__ void set_route_data(typename problem_t<i_t, f_t>::view_t const& probl
       route.template get_dim<dim_t::CAP>().max_to_node[0]           = 0;
       route.template get_dim<dim_t::CAP>().gathered[0]              = 0;
       route.template get_dim<dim_t::CAP>().max_after[n_nodes_route] = 0;
+    }
+    if (problem.dimensions_info.has_dimension(dim_t::ROUTE_SIZE)) {
+      route.template get_dim<dim_t::ROUTE_SIZE>().fwd_count[0]             = 0;
+      route.template get_dim<dim_t::ROUTE_SIZE>().bwd_count[n_nodes_route] = 0;
     }
   }
 }

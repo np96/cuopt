@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -28,7 +28,8 @@ struct VehicleInfo {
            break_durations == rhs.break_durations && break_earliest == rhs.break_earliest &&
            break_latest == rhs.break_latest && earliest == rhs.earliest && latest == rhs.latest &&
            start == rhs.start && end == rhs.end && max_cost == rhs.max_cost &&
-           max_time == rhs.max_time && fixed_cost == rhs.fixed_cost && priority == rhs.priority;
+           max_time == rhs.max_time && fixed_cost == rhs.fixed_cost && priority == rhs.priority &&
+           max_route_size == rhs.max_route_size;
   }
 
   HDI int num_breaks() const { return break_durations.size(); }
@@ -64,6 +65,9 @@ struct VehicleInfo {
   f_t max_time = std::numeric_limits<f_t>::max();
   f_t fixed_cost{};
   int priority{};
+  // per-vehicle upper bound on total service-node visits in the route.
+  // numeric_limits::max() means "unconstrained" (the ROUTE_SIZE dimension is disabled).
+  int max_route_size = std::numeric_limits<int>::max();
 };
 }  // namespace detail
 }  // namespace routing

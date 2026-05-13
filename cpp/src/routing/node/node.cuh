@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -13,6 +13,7 @@
 #include "mismatch_node.cuh"
 #include "pdp_node.cuh"
 #include "prize_node.cuh"
+#include "route_size_node.cuh"
 #include "service_time_node.cuh"
 #include "tasks_node.cuh"
 #include "time_node.cuh"
@@ -296,6 +297,7 @@ class node_t {
   mismatch_node_t<i_t, f_t> mismatch_dim;
   break_node_t<i_t, f_t> break_dim;
   vehicle_fixed_cost_node_t<i_t, f_t> vehicle_fixed_cost_dim;
+  route_size_node_t<i_t, f_t> route_size_dim;
 
   static constexpr int max_capacity_dim = decltype(capacity_dim)::max_capacity_dim;
 };

@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -91,6 +91,8 @@ DI node_t<i_t, f_t, REQUEST> create_node(const typename problem_t<i_t, f_t>::vie
   });
 
   node.prize_dim.prize = problem.order_info.prizes[node_idx];
+
+  node.route_size_dim.count_increment = 1;
 
   node.request = request_info_t<i_t, REQUEST>(node_info, brother_info);
   return node;
@@ -244,8 +246,9 @@ DI node_t<i_t, f_t, REQUEST> create_depot_node(const typename problem_t<i_t, f_t
     if (i < node.capacity_dim.n_capacity_dimensions) { node.capacity_dim.demand[i] = 0; }
   });
 
-  node.prize_dim.prize = 0.;
-  node.request         = request_info_t<i_t, REQUEST>(node_info, brother_info);
+  node.prize_dim.prize                = 0.;
+  node.route_size_dim.count_increment = 0;
+  node.request                        = request_info_t<i_t, REQUEST>(node_info, brother_info);
   return node;
 }
 
@@ -280,8 +283,9 @@ constexpr node_t<i_t, f_t, REQUEST> create_depot_node(const problem_t<i_t, f_t>*
     if (i < node.capacity_dim.n_capacity_dimensions) { node.capacity_dim.demand[i] = 0; }
   });
 
-  node.prize_dim.prize = 0.;
-  node.request         = request_info_t<i_t, REQUEST>(node_info, brother_info);
+  node.prize_dim.prize                = 0.;
+  node.route_size_dim.count_increment = 0;
+  node.request                        = request_info_t<i_t, REQUEST>(node_info, brother_info);
   return node;
 }
 
@@ -303,6 +307,8 @@ DI node_t<i_t, f_t, REQUEST> create_break_node(
   // FIXME:: setting the prize to zero for now.
   // When we support breaks through prize collection mechanism, this will change
   node.prize_dim.prize = 0.;
+
+  node.route_size_dim.count_increment = 0;
 
   node.request = request_info_t<i_t, REQUEST>(node_info, node_info);
   return node;
