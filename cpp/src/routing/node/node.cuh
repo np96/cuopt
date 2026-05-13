@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -10,6 +10,7 @@
 #include "break_node.cuh"
 #include "capacity_node.cuh"
 #include "distance_node.cuh"
+#include "incompat_node.cuh"
 #include "mismatch_node.cuh"
 #include "pdp_node.cuh"
 #include "prize_node.cuh"
@@ -35,7 +36,9 @@ class node_t {
   DI node_t() = delete;
 
   DI node_t(const enabled_dimensions_t& dimensions_info_)
-    : dimensions_info(dimensions_info_), capacity_dim(dimensions_info_.capacity_dim)
+    : dimensions_info(dimensions_info_),
+      capacity_dim(dimensions_info_.capacity_dim),
+      incompat_dim(dimensions_info_.incompat_dim)
   {
   }
 
@@ -296,6 +299,7 @@ class node_t {
   mismatch_node_t<i_t, f_t> mismatch_dim;
   break_node_t<i_t, f_t> break_dim;
   vehicle_fixed_cost_node_t<i_t, f_t> vehicle_fixed_cost_dim;
+  incompat_node_t<i_t, f_t> incompat_dim;
 
   static constexpr int max_capacity_dim = decltype(capacity_dim)::max_capacity_dim;
 };

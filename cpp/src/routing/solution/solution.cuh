@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -91,6 +91,24 @@ DI node_t<i_t, f_t, REQUEST> create_node(const typename problem_t<i_t, f_t>::vie
   });
 
   node.prize_dim.prize = problem.order_info.prizes[node_idx];
+
+  // INCOMPAT dimension: populate tag_mask + delta.
+  //   PDP : PICKUP = +1, DELIVERY = -1 (true pickup/delivery overlap).
+  //   non-PDP : set_nodes_data marks every customer node as DELIVERY for the
+  //             routing framework's purposes, but for the INCOMPAT dim we
+  //             want "same-route co-assignment" semantics (no decrement at
+  //             dropoff). Force delta = +1 in that mode.
+  // When the dim is disabled, has_incompat=false on the dim_info, n_tags=0
+  // on the node, and the propagation loop is a no-op — but we still write
+  // the fields so get_node/set_node round-trips don't read uninit.
+  if (problem.dimensions_info.has_dimension(dim_t::INCOMPAT)) {
+    node.incompat_dim.tag_mask = problem.order_info.order_tag_masks[node_idx];
+    if (problem.order_info.is_pdp()) {
+      node.incompat_dim.delta = node_info.is_pickup() ? +1 : node_info.is_delivery() ? -1 : 0;
+    } else {
+      node.incompat_dim.delta = +1;
+    }
+  }
 
   node.request = request_info_t<i_t, REQUEST>(node_info, brother_info);
   return node;
@@ -245,7 +263,10 @@ DI node_t<i_t, f_t, REQUEST> create_depot_node(const typename problem_t<i_t, f_t
   });
 
   node.prize_dim.prize = 0.;
-  node.request         = request_info_t<i_t, REQUEST>(node_info, brother_info);
+  // INCOMPAT: depot contributes nothing (mask = 0, delta = 0).
+  node.incompat_dim.tag_mask = 0;
+  node.incompat_dim.delta    = 0;
+  node.request               = request_info_t<i_t, REQUEST>(node_info, brother_info);
   return node;
 }
 

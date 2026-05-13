@@ -12,6 +12,17 @@
 #include <utilities/vector_helpers.cuh>
 
 #include <utilities/seed_generator.cuh>
+
+#include <cuopt/error.hpp>
+
+#include <rmm/device_scalar.hpp>
+#include <rmm/exec_policy.hpp>
+
+#include <thrust/execution_policy.h>
+#include <thrust/for_each.h>
+#include <thrust/iterator/counting_iterator.h>
+
+#include <cmath>
 namespace cuopt {
 namespace routing {
 namespace detail {
@@ -31,7 +42,8 @@ problem_t<i_t, f_t>::problem_t(const data_model_view_t<i_t, f_t>& data_model_vie
     start_depot_node_infos(0, handle_ptr->get_stream()),
     return_depot_node_infos(0, handle_ptr->get_stream()),
     bucket_to_vehicle_id(0, handle_ptr->get_stream()),
-    special_nodes(handle_ptr)
+    special_nodes(handle_ptr),
+    incompat_matrix_d_(0, handle_ptr->get_stream())
 {
   populate_fleet_info(data_model_view_, fleet_info);
   populate_order_info(data_model_view_, order_info);
@@ -346,6 +358,85 @@ void problem_t<i_t, f_t>::populate_dimensions_info()
     dimensions_info.enable_dimension(dim_t::VEHICLE_FIXED_COST);
     if (!specified_weights.count(objective_t::VEHICLE_FIXED_COST)) {
       dimensions_info.enable_objective(objective_t::VEHICLE_FIXED_COST, 1.0);
+    }
+  }
+
+  // INCOMPAT dimension info
+  {
+    uint64_t const* tag_masks_ptr = data_view_ptr->get_order_tag_masks();
+    f_t const* matrix_ptr         = data_view_ptr->get_incompat_matrix();
+    i_t n_tags                    = data_view_ptr->get_n_incompat_tags();
+    bool has_tags                 = (tag_masks_ptr != nullptr);
+    bool has_matrix               = (matrix_ptr != nullptr);
+
+    cuopt_expects(has_tags == has_matrix,
+                  error_type_t::ValidationError,
+                  "set_order_tag_masks and set_incompatibility_matrix must be called together "
+                  "or both omitted");
+
+    if (has_tags && has_matrix) {
+      cuopt_expects(n_tags > 0 && n_tags <= static_cast<i_t>(max_incompat_tags),
+                    error_type_t::ValidationError,
+                    "n_tags must be in (0, max_incompat_tags]");
+
+      auto stream  = handle_ptr->get_stream();
+      i_t mat_size = n_tags * n_tags;
+
+      // Copy matrix to owned device storage.
+      incompat_matrix_d_.resize(mat_size, stream);
+      raft::copy(incompat_matrix_d_.data(), matrix_ptr, mat_size, stream);
+      n_incompat_tags_ = n_tags;
+
+      // Validate symmetry (reuses the existing helper used for cost matrices).
+      cuopt_expects(
+        detail::is_symmetric_matrix<i_t, f_t>(incompat_matrix_d_.data(), n_tags, handle_ptr),
+        error_type_t::ValidationError,
+        "Incompatibility matrix must be symmetric");
+
+      // Validate diagonal == 0, values non-negative & finite, and per-mask bit
+      // range — all via a single small device kernel (one launch, one sync to
+      // surface the error host-side).
+      rmm::device_scalar<int> flags(0, stream);
+      int* d_flags = flags.data();
+      auto* mat    = incompat_matrix_d_.data();
+      thrust::for_each_n(rmm::exec_policy(stream),
+                         thrust::counting_iterator<i_t>(0),
+                         mat_size,
+                         [d_flags, mat, n_tags] __device__(i_t idx) {
+                           i_t i = idx / n_tags;
+                           i_t j = idx % n_tags;
+                           f_t v = mat[idx];
+                           if (!isfinite(v) || v < 0.f) { atomicOr(d_flags, 1); }
+                           if (i == j && v != 0.f) { atomicOr(d_flags, 2); }
+                         });
+
+      // Mask bit-range check: no bit at index >= n_tags.
+      auto const* d_masks = order_info.v_order_tag_masks_.data();
+      i_t n_orders        = order_info.get_num_orders();
+      thrust::for_each_n(rmm::exec_policy(stream),
+                         thrust::counting_iterator<i_t>(0),
+                         n_orders,
+                         [d_flags, d_masks, n_tags] __device__(i_t o) {
+                           uint64_t mask = d_masks[o];
+                           if ((mask >> n_tags) != 0ULL) { atomicOr(d_flags, 4); }
+                         });
+
+      int host_flags = flags.value(stream);
+      cuopt_expects((host_flags & 1) == 0,
+                    error_type_t::ValidationError,
+                    "Incompatibility matrix entries must be finite and non-negative");
+      cuopt_expects((host_flags & 2) == 0,
+                    error_type_t::ValidationError,
+                    "Incompatibility matrix diagonal must be zero");
+      cuopt_expects((host_flags & 4) == 0,
+                    error_type_t::ValidationError,
+                    "Order tag mask has a bit set at index >= n_tags");
+
+      dimensions_info.enable_dimension(dim_t::INCOMPAT);
+      auto& info           = dimensions_info.incompat_dim;
+      info.has_incompat    = true;
+      info.n_tags          = n_tags;
+      info.incompat_matrix = incompat_matrix_d_.data();
     }
   }
 

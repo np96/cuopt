@@ -1,12 +1,14 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
 
 #include <cuopt/error.hpp>
 #include <routing/utilities/check_input.hpp>
+
+#include <cstdint>
 
 #include <raft/core/device_mdarray.hpp>
 #include <raft/linalg/transpose.cuh>
@@ -445,6 +447,8 @@ template bool check_pdp_values<int, int>(
   int const*, int const*, int const*, unsigned long, rmm::cuda_stream_view);
 template bool check_pdp_values<int, float>(
   int const*, int const*, float const*, unsigned long, rmm::cuda_stream_view);
+template bool check_pdp_values<int, uint64_t>(
+  int const*, int const*, uint64_t const*, unsigned long, rmm::cuda_stream_view);
 
 template bool check_min_latest_with_depot<int>(rmm::device_uvector<int>&,
                                                int,

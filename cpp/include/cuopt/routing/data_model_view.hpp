@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -12,6 +12,7 @@
 #include <raft/core/device_span.hpp>
 #include <raft/core/handle.hpp>
 
+#include <cstdint>
 #include <unordered_set>
 namespace cuopt {
 namespace routing {
@@ -346,6 +347,36 @@ class data_model_view_t {
   void set_order_prizes(f_t const* prizes, bool validate_input = true);
 
   /**
+   * @brief Set per-order tag bitmasks for the order-tag incompatibility
+   * dimension (INCOMPAT). Each order carries a set of tags encoded as a
+   * uint64 bitmask (bit t set ⇒ tag id t carried). For pickup-delivery
+   * problems, both the pickup and delivery node of a request must carry the
+   * SAME mask; this is validated at model finalization.
+   *
+   * Must be called together with set_incompatibility_matrix. Calling exactly
+   * one of the two triggers a ValidationError at solve time; calling neither
+   * leaves the dimension disabled (no-op).
+   *
+   * @throws cuopt::logic_error when an error occurs
+   * @param[in] tag_masks Device pointer to a uint64 array of length
+   *   num_orders. Non-owning; lifetime must exceed solve().
+   */
+  void set_order_tag_masks(uint64_t const* tag_masks);
+
+  /**
+   * @brief Set the n_tags × n_tags symmetric incompatibility weight matrix
+   * for the INCOMPAT dimension. M[i][j] is the per-pair cost contribution
+   * when tags i and j are co-loaded on the same route. M must be symmetric
+   * with M[t][t] = 0, all values finite and ≥ 0. n_tags ≤ 32.
+   *
+   * @throws cuopt::logic_error when an error occurs
+   * @param[in] matrix Device pointer, row-major, size n_tags * n_tags.
+   *   Non-owning; lifetime must exceed solve().
+   * @param[in] n_tags  Number of tag IDs.
+   */
+  void set_incompatibility_matrix(f_t const* matrix, i_t n_tags);
+
+  /**
    * @brief Add precedence constraints for a given order.
    * For each order that needs to come after one or more orders call this
    * function. Currently circular dependencies are not accepted.
@@ -563,6 +594,25 @@ class data_model_view_t {
   raft::device_span<f_t const> get_order_prizes() const noexcept;
 
   /**
+   * @brief Get the order tag-mask device pointer for the INCOMPAT dimension.
+   * Returns nullptr if set_order_tag_masks was never called.
+   */
+  uint64_t const* get_order_tag_masks() const noexcept;
+
+  /**
+   * @brief Get the incompatibility matrix device pointer (row-major,
+   * size n_tags*n_tags). Returns nullptr if set_incompatibility_matrix was
+   * never called.
+   */
+  f_t const* get_incompat_matrix() const noexcept;
+
+  /**
+   * @brief Get the number of tag IDs for the INCOMPAT dimension. Returns 0
+   * if set_incompatibility_matrix was never called.
+   */
+  i_t get_n_incompat_tags() const noexcept;
+
+  /**
    * @brief Get pickup delivery pairs
    * @return Pair of pointers containing pick up and delivery indices
    */
@@ -625,6 +675,13 @@ class data_model_view_t {
   detail::order_time_window_t<i_t, f_t> order_tw_{};
 
   raft::device_span<f_t const> order_prizes_;
+
+  // INCOMPAT dimension (order-tag incompatibility) inputs. Both are non-owning
+  // device pointers; lifetime must exceed solve(). Both must be set together
+  // (or neither) — validated at problem-construction time, not in setters.
+  uint64_t const* order_tag_masks_{nullptr};
+  f_t const* incompat_matrix_{nullptr};
+  i_t n_incompat_tags_{0};
 
   i_t const* start_locations_{nullptr};
   i_t const* return_locations_{nullptr};

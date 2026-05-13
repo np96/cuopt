@@ -12,6 +12,8 @@
 #include <routing/structures.hpp>
 #include <routing/utilities/md_utils.hpp>
 
+#include <cstdint>
+
 namespace cuopt {
 namespace routing {
 
@@ -28,7 +30,8 @@ class order_info_t {
       v_is_pickup_index_(num_orders, handle_ptr->get_stream()),
       v_earliest_time_(num_orders, handle_ptr->get_stream()),
       v_latest_time_(num_orders, handle_ptr->get_stream()),
-      v_prizes_(num_orders, handle_ptr->get_stream())
+      v_prizes_(num_orders, handle_ptr->get_stream()),
+      v_order_tag_masks_(0, handle_ptr->get_stream())
   {
   }
 
@@ -110,6 +113,7 @@ class order_info_t {
     raft::device_span<const i_t> earliest_time;
     raft::device_span<const i_t> latest_time;
     raft::device_span<const f_t> prizes;
+    raft::device_span<const uint64_t> order_tag_masks;  // empty when INCOMPAT disabled
   };
 
   view_t view() const
@@ -127,7 +131,9 @@ class order_info_t {
       raft::device_span<const i_t>{v_earliest_time_.data(), v_earliest_time_.size()};
     v.latest_time = raft::device_span<const i_t>{v_latest_time_.data(), v_latest_time_.size()};
     v.prizes      = raft::device_span<const f_t>{v_prizes_.data(), v_prizes_.size()};
-    v.nrequests   = get_num_requests();
+    v.order_tag_masks =
+      raft::device_span<const uint64_t>{v_order_tag_masks_.data(), v_order_tag_masks_.size()};
+    v.nrequests = get_num_requests();
     return v;
   }
 
@@ -142,6 +148,11 @@ class order_info_t {
   rmm::device_uvector<i_t> v_earliest_time_;
   rmm::device_uvector<i_t> v_latest_time_;
   rmm::device_uvector<f_t> v_prizes_;
+  // INCOMPAT dimension: per-order tag bitmasks (one per pickup-or-delivery
+  // node). Empty when set_order_tag_masks was never called. For PDP, pickup
+  // and delivery of the same request must hold the same mask (validated in
+  // populate_order_info).
+  rmm::device_uvector<uint64_t> v_order_tag_masks_;
 };
 
 /**

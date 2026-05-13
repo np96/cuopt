@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -34,7 +34,10 @@ constexpr int BREAK = 7;
 
 constexpr int VEHICLE_FIXED_COST = 8;
 
-constexpr int NDIM = 9;
+// order-tag incompatibility (event-based), parallel to dim_t::INCOMPAT
+constexpr int INCOMPAT = 9;
+
+constexpr int NDIM = 10;
 
 #define MACHINE_EPSILON 0.000001
 #define MOVE_EPSILON    0.0001

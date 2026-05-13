@@ -175,6 +175,8 @@ cdef class DataModel:
         self.order_earliest = cudf.Series()
         self.order_latest = cudf.Series()
         self.order_prizes = cudf.Series()
+        self.order_tag_masks = cudf.Series()
+        self.incompat_matrix = None  # cupy ndarray when set
         self.pickup_indices = cudf.Series()
         self.delivery_indices = cudf.Series()
         self.objectives = cudf.Series()
@@ -523,6 +525,30 @@ cdef class DataModel:
 
         self.c_data_model_view.get().set_order_prizes(
             <const float *> c_prizes
+        )
+
+    def set_order_tag_masks(self, tag_masks):
+        # tag_masks: one uint64 per order; bit t set <=> order carries tag id t.
+        # Stored on self to keep the device buffer alive for the model's
+        # lifetime (data_model_view holds a non-owning pointer).
+        self.order_tag_masks = type_cast(tag_masks, np.uint64,
+                                         "order_tag_masks")
+        cdef uintptr_t c_tag_masks = (
+            self.order_tag_masks.__cuda_array_interface__['data'][0]
+        )
+        self.c_data_model_view.get().set_order_tag_masks(
+            <const uint64_t *> c_tag_masks
+        )
+
+    def set_incompatibility_matrix(self, matrix):
+        # matrix: n_tags x n_tags row-major float32, symmetric, M[t][t] = 0.
+        matrix = type_cast(matrix, np.float32, "incompatibility_matrix")
+        n_tags = matrix.shape[0]
+        self.incompat_matrix = cp.array(matrix.to_cupy(),
+                                        order='C', dtype=np.float32)
+        cdef uintptr_t c_matrix = self.incompat_matrix.data.ptr
+        self.c_data_model_view.get().set_incompatibility_matrix(
+            <const float *> c_matrix, <int> n_tags
         )
 
     def add_order_precedence(self, node_id, preceding_nodes):

@@ -107,6 +107,9 @@ cdef extern from "cuopt/routing/solve.hpp" namespace "cuopt::routing":
             const i_t *latest) except +
         void set_order_prizes(
             const f_t *prizes) except +
+        void set_order_tag_masks(const uint64_t *tag_masks) except +
+        void set_incompatibility_matrix(
+            const f_t *matrix, i_t n_tags) except +
         void add_order_precedence(
             i_t node_id,
             const i_t *preceding_nodes,

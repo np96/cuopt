@@ -778,6 +778,139 @@ class DataModel(vehicle_routing_wrapper.DataModel):
         super().set_order_prizes(prizes)
 
     @catch_cuopt_exception
+    def set_order_tag_masks(self, tag_masks):
+        """
+        Set per-order tag bitmasks for the order-tag incompatibility
+        dimension (INCOMPAT). Each order carries a set of tags encoded
+        as a uint64 bitmask: bit ``t`` set means the order carries tag id
+        ``t``. For pickup-delivery problems the pickup and delivery node
+        of a request must hold the **same** mask; this is checked at
+        solve time.
+
+        Must be called together with
+        :py:meth:`set_incompatibility_matrix`. Calling exactly one of the
+        two raises a ValueError at solve time; calling neither leaves
+        the dimension disabled (no-op).
+
+        Parameters
+        ----------
+        tag_masks : cudf.Series dtype - uint64
+            Length equals num_orders. Bit ``t`` set means tag id ``t``.
+
+        Examples
+        --------
+        >>> import cudf
+        >>> # 4 orders, tag ids 0 and 1
+        >>> masks = cudf.Series([0b01, 0b10, 0b11, 0b00], dtype='uint64')
+        >>> data_model.set_order_tag_masks(masks)
+        """
+        validate_size(
+            tag_masks,
+            "order tag masks",
+            self.get_num_orders(),
+            "number of orders",
+        )
+        super().set_order_tag_masks(tag_masks)
+
+    @catch_cuopt_exception
+    def set_order_tags(self, tag_lists):
+        """
+        Convenience helper: set per-order tag lists (Python list of lists
+        of int tag ids) instead of pre-packed uint64 bitmasks. Internally
+        OR-folds each per-order list into a uint64 mask and calls
+        :py:meth:`set_order_tag_masks`.
+
+        Parameters
+        ----------
+        tag_lists : list[list[int]]
+            One list of tag ids per order. Tag ids must be in [0, 32).
+
+        Examples
+        --------
+        >>> # order 0 has tags {0, 1}, order 1 has tag {2}
+        >>> data_model.set_order_tags([[0, 1], [2]])
+        """
+        validate_size(
+            tag_lists,
+            "order tag lists",
+            self.get_num_orders(),
+            "number of orders",
+        )
+        masks_np = np.zeros(self.get_num_orders(), dtype=np.uint64)
+        for i, tags in enumerate(tag_lists):
+            mask = np.uint64(0)
+            for t in tags:
+                if not (0 <= int(t) < 32):
+                    raise ValueError(
+                        "Tag id "
+                        + str(t)
+                        + " for order "
+                        + str(i)
+                        + " is out of range [0, 32)"
+                    )
+                mask |= np.uint64(1) << np.uint64(int(t))
+            masks_np[i] = mask
+        self.set_order_tag_masks(cudf.Series(masks_np))
+
+    @catch_cuopt_exception
+    def set_incompatibility_matrix(self, matrix):
+        """
+        Set the n_tags x n_tags symmetric incompatibility weight matrix
+        for the INCOMPAT dimension. ``matrix[i][j]`` is the per-pair cost
+        contribution when tags ``i`` and ``j`` are co-loaded on the
+        same route. The matrix must be:
+
+        * square (n_tags x n_tags), with ``n_tags <= 32``,
+        * symmetric: ``matrix[i][j] == matrix[j][i]``,
+        * zero on the diagonal: ``matrix[t][t] == 0``,
+        * finite and non-negative.
+
+        For weighted matrices a single pair of co-loaded orders may
+        contribute more than 1 (the sum of incompatibilities across all
+        their tag pairs).
+
+        Must be called together with :py:meth:`set_order_tag_masks`.
+
+        Parameters
+        ----------
+        matrix : cudf.DataFrame (n_tags x n_tags), float32
+            Row-major; users with numerically-noisy inputs should
+            pre-symmetrize via ``(M + M.T) / 2``.
+
+        Examples
+        --------
+        >>> import cudf
+        >>> # 2 tags, M[0][1] = M[1][0] = 1
+        >>> M = cudf.DataFrame([[0.0, 1.0], [1.0, 0.0]])
+        >>> data_model.set_incompatibility_matrix(M)
+        """
+        n_tags = matrix.shape[0]
+        if matrix.shape[0] != matrix.shape[1]:
+            raise ValueError(
+                "incompatibility matrix is expected to be a square matrix"
+            )
+        if n_tags <= 0 or n_tags > 32:
+            raise ValueError("n_tags must be in [1, 32]; got " + str(n_tags))
+        if matrix.isnull().any(axis=1).any():
+            raise ValueError("incompatibility matrix cannot have NULL values")
+        # non-negativity + symmetry + zero diagonal (host-side preflight;
+        # also re-checked C++-side at solve time for direct C callers).
+        mat_host = matrix.to_pandas().to_numpy()
+        if (mat_host < 0).any():
+            raise ValueError(
+                "incompatibility matrix entries must be non-negative"
+            )
+        if not np.array_equal(mat_host, mat_host.T):
+            raise ValueError(
+                "incompatibility matrix must be symmetric (M[i][j] == "
+                "M[j][i]); pre-symmetrize with (M + M.T) / 2 for "
+                "numerically-noisy inputs"
+            )
+        if not np.all(np.diag(mat_host) == 0):
+            raise ValueError("incompatibility matrix diagonal must be zero")
+        super().set_incompatibility_matrix(matrix)
+
+    @catch_cuopt_exception
     def set_drop_return_trips(self, set_drop_return_trips):
         """
         Control if individual vehicles in the fleet return to the

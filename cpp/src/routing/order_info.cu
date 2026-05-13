@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -230,6 +230,25 @@ void populate_order_info(data_model_view_t<i_t, f_t> const& data_model,
                                order_info_.v_prizes_.begin(),
                                order_info_.v_prizes_.end(),
                                std::numeric_limits<f_t>::max());
+  }
+
+  // INCOMPAT dimension: copy per-order tag masks and validate PDP equality.
+  // The matching matrix lives on problem_t (per-problem), not here.
+  if (auto tag_masks = data_model.get_order_tag_masks(); tag_masks != nullptr) {
+    order_info_.v_order_tag_masks_.resize(norders, stream_view);
+    raft::copy(order_info_.v_order_tag_masks_.data(), tag_masks, norders, stream);
+
+    if (is_pdp) {
+      bool valid_tags =
+        detail::check_pdp_values<i_t, uint64_t>(pickup_delivery_indices.first,
+                                                pickup_delivery_indices.second,
+                                                order_info_.v_order_tag_masks_.data(),
+                                                order_info_.get_num_requests(),
+                                                handle_ptr_->get_stream());
+      cuopt_expects(valid_tags,
+                    error_type_t::ValidationError,
+                    "Tag masks of pickup and delivery pairs must be equal");
+    }
   }
 
   populate_time_windows(data_model, order_info_);
