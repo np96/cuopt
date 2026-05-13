@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -18,10 +18,10 @@ constexpr int DEPOT = 0;
 
 // this is to be used in host code as device code cannot handle constexpr arrays
 // the weights are always double as they are cauing issues with convergence
-static constexpr const double default_weights[] = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
-static constexpr const double zero_cost[]       = {0., 0., 0., 0., 0., 0., 0., 0., 0.};
-__device__ const double d_default_weights[]     = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
-__device__ const double d_zero_cost[]           = {0., 0., 0., 0., 0., 0., 0., 0., 0.};
+static constexpr const double default_weights[] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
+static constexpr const double zero_cost[]       = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+__device__ const double d_default_weights[]     = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
+__device__ const double d_zero_cost[]           = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
 
 static_assert(sizeof(default_weights) / sizeof(double) == (size_t)dim_t::SIZE);
 static_assert(sizeof(d_default_weights) / sizeof(double) == (size_t)dim_t::SIZE);

@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -60,6 +60,22 @@ __device__ void set_route_data(typename problem_t<i_t, f_t>::view_t const& probl
       route.template get_dim<dim_t::CAP>().max_to_node[0]           = 0;
       route.template get_dim<dim_t::CAP>().gathered[0]              = 0;
       route.template get_dim<dim_t::CAP>().max_after[n_nodes_route] = 0;
+    }
+    if (problem.dimensions_info.has_dimension(dim_t::INCOMPAT)) {
+      auto& r          = route.template get_dim<dim_t::INCOMPAT>();
+      const i_t n_tags = problem.dimensions_info.incompat_dim.n_tags;
+      // Start-depot boundary (position 0): fwd state zero.
+      r.fwd_excess[0] = 0.0;
+      for (i_t t = 0; t < n_tags; ++t) {
+        r.fwd_count[t * r.stride + 0] = 0;
+      }
+      // End-depot boundary (position n_nodes_route): bwd state zero.
+      r.bwd_excess[n_nodes_route] = 0.0;
+      for (i_t t = 0; t < n_tags; ++t) {
+        r.bwd_pickup_tag_sum[t * r.stride + n_nodes_route] = 0;
+      }
+      // tag_mask and delta of both depot positions are already 0 from
+      // create_depot_node; no need to write them here.
     }
   }
 }

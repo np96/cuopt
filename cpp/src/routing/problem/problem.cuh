@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -330,6 +330,10 @@ class problem_t {
   bool is_tsp{false};
   bool is_cvrp_{false};
   bool non_uniform_breaks_{false};
+
+  // INCOMPAT dimension storage. Empty + 0 when the dim is disabled.
+  rmm::device_uvector<f_t> incompat_matrix_d_;
+  i_t n_incompat_tags_{0};
 };
 
 }  // namespace detail

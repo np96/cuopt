@@ -10,6 +10,7 @@
 #include <ostream>
 #include <rmm/device_scalar.hpp>
 #include <rmm/exec_policy.hpp>
+#include <routing/dimensions.cuh>
 #include <routing/structures.hpp>
 #include <routing/utilities/check_input.hpp>
 #include <unordered_set>
@@ -433,6 +434,28 @@ void data_model_view_t<i_t, f_t>::set_order_prizes(f_t const* prizes, bool valid
 }
 
 template <typename i_t, typename f_t>
+void data_model_view_t<i_t, f_t>::set_order_tag_masks(uint64_t const* tag_masks)
+{
+  cuopt_expects(
+    tag_masks != nullptr, error_type_t::ValidationError, "Order tag masks cannot be null");
+  order_tag_masks_ = tag_masks;
+}
+
+template <typename i_t, typename f_t>
+void data_model_view_t<i_t, f_t>::set_incompatibility_matrix(f_t const* matrix, i_t n_tags)
+{
+  cuopt_expects(
+    matrix != nullptr, error_type_t::ValidationError, "Incompatibility matrix cannot be null");
+  cuopt_expects(
+    n_tags > 0, error_type_t::ValidationError, "Number of incompatibility tags must be positive");
+  cuopt_expects(n_tags <= static_cast<i_t>(detail::max_incompat_tags),
+                error_type_t::ValidationError,
+                "Number of incompatibility tags exceeds max_incompat_tags (32)");
+  incompat_matrix_ = matrix;
+  n_incompat_tags_ = n_tags;
+}
+
+template <typename i_t, typename f_t>
 void data_model_view_t<i_t, f_t>::add_order_precedence(i_t order_id,
                                                        i_t const* preceding_orders,
                                                        i_t n_preceding_orders)
@@ -705,6 +728,24 @@ template <typename i_t, typename f_t>
 raft::device_span<f_t const> data_model_view_t<i_t, f_t>::get_order_prizes() const noexcept
 {
   return order_prizes_;
+}
+
+template <typename i_t, typename f_t>
+uint64_t const* data_model_view_t<i_t, f_t>::get_order_tag_masks() const noexcept
+{
+  return order_tag_masks_;
+}
+
+template <typename i_t, typename f_t>
+f_t const* data_model_view_t<i_t, f_t>::get_incompat_matrix() const noexcept
+{
+  return incompat_matrix_;
+}
+
+template <typename i_t, typename f_t>
+i_t data_model_view_t<i_t, f_t>::get_n_incompat_tags() const noexcept
+{
+  return n_incompat_tags_;
 }
 
 template <typename i_t, typename f_t>

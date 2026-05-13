@@ -8,6 +8,8 @@
 #include <cuopt/error.hpp>
 #include <routing/utilities/check_input.hpp>
 
+#include <cstdint>
+
 #include <raft/core/device_mdarray.hpp>
 #include <raft/linalg/transpose.cuh>
 #include <raft/util/cudart_utils.hpp>
@@ -447,6 +449,8 @@ template bool check_pdp_values<int, int>(
   int const*, int const*, int const*, unsigned long, rmm::cuda_stream_view);
 template bool check_pdp_values<int, float>(
   int const*, int const*, float const*, unsigned long, rmm::cuda_stream_view);
+template bool check_pdp_values<int, uint64_t>(
+  int const*, int const*, uint64_t const*, unsigned long, rmm::cuda_stream_view);
 
 template bool check_min_latest_with_depot<int>(rmm::device_uvector<int>&,
                                                int,
