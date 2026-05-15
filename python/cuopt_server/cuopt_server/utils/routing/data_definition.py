@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
@@ -598,6 +598,19 @@ class SolverSettingsConfig(StrictModel):
             "solver execution."
         ),
     )
+    skip_vehicle_minimization: Optional[bool] = Field(
+        default=False,
+        examples=[False],
+        description=(
+            "When True, skip the dedicated vehicle-count minimization phase "
+            "and minimize only the configured objective (cost, travel time, "
+            "etc.). The solver starts from "
+            "min(fleet_size, num_orders) routes and may leave routes empty "
+            "if the objective is improved by doing so. Use when fleet "
+            "capacity is sufficient and only total cost / travel time should "
+            "be minimized. Ignored when min_vehicles == fleet_size."
+        ),
+    )
 
 
 class VehicleSolData(BaseModel):
@@ -996,6 +1009,7 @@ vrp_example_data = {
         "config_file": None,
         "verbose_mode": False,
         "error_logging": True,
+        "skip_vehicle_minimization": False,
     },
 }
 

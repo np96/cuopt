@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -64,6 +64,29 @@ class solver_settings_t {
   void dump_best_results(const std::string& file_path, i_t interval);
 
   /**
+   * @brief Skip the dedicated vehicle-count minimization phase.
+   *
+   * By default, cuOpt routing first searches to minimize the number of
+   * vehicles (routes) used, then optimizes the configured objective (cost,
+   * travel time, etc.). When this flag is enabled, the vehicle-count
+   * minimization phase is skipped: the solver starts directly from a route
+   * count of `min(fleet_size, num_orders)` and uses the available time to
+   * minimize the configured objective. Routes left empty by local search
+   * count as unused vehicles, so the final vehicle count can be any value up
+   * to `min(fleet_size, num_orders)`.
+   *
+   * Use this when you have enough vehicles and only care about minimizing
+   * total cost or travel time, without preferring fewer vehicles.
+   *
+   * @note If `min_vehicles == fleet_size` (vehicle count is already pinned),
+   * this setting has no effect.
+   *
+   * @param[in] skip True to skip vehicle-count minimization. Default is
+   * false.
+   */
+  void set_skip_vehicle_minimization(bool skip);
+
+  /**
    * @brief Return set solving time
    * @return Solving time set in seconds
    */
@@ -86,12 +109,18 @@ class solver_settings_t {
    */
   std::tuple<i_t, bool, std::string> get_dump_best_results() const noexcept;
 
+  /**
+   * @brief Return true if vehicle-count minimization will be skipped.
+   */
+  bool get_skip_vehicle_minimization() const noexcept;
+
   bool enable_verbose_mode_{false};
   bool log_errors_{false};
   f_t time_limit_{std::numeric_limits<f_t>::max()};
   i_t dump_interval_{std::numeric_limits<i_t>::max()};
   bool dump_best_results_{false};
   std::string best_result_file_name_;
+  bool skip_vehicle_minimization_{false};
 };
 
 }  // namespace routing

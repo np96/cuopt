@@ -771,6 +771,12 @@ cdef class SolverSettings:
     def dump_config_file(self, file_name):
         self.config_file_path = file_name
 
+    def set_skip_vehicle_minimization(self, bool skip):
+        self.c_solver_settings.get().set_skip_vehicle_minimization(skip)
+
+    def get_skip_vehicle_minimization(self):
+        return self.c_solver_settings.get().get_skip_vehicle_minimization()
+
     def get_time_limit(self):
         return self.c_solver_settings.get().get_time_limit()
 

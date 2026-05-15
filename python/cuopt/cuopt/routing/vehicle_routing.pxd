@@ -130,8 +130,10 @@ cdef extern from "cuopt/routing/solve.hpp" namespace "cuopt::routing":
         void set_verbose_mode(bool verbose) except+
         void set_error_logging_mode(bool logging) except+
         void dump_best_results(const string &file_path, i_t interval) except+
+        void set_skip_vehicle_minimization(bool skip) except+
 
         f_t get_time_limit() except+
+        bool get_skip_vehicle_minimization() except+
 
 cdef extern from "cuopt/routing/cython/cython.hpp" namespace "cuopt::cython": # noqa
     cdef unique_ptr[vehicle_routing_ret_t] call_solve(
