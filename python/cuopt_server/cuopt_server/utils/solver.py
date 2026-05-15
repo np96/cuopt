@@ -263,6 +263,7 @@ def populate_optimization_data(
                 solver_config.config_file,
                 solver_config.verbose_mode,
                 solver_config.error_logging,
+                solver_config.skip_vehicle_minimization,
             )
         )
 

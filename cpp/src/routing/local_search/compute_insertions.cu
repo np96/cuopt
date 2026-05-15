@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -693,8 +693,13 @@ __global__ void find_insertions_kernel(typename solution_t<i_t, f_t, REQUEST>::v
       solution.route_node_map.get_intra_route_idx(ejected_id.id()));
     __syncthreads();
     // record ejection costs of each PD request as a move from the special node to the ejected
-    // node we only record the routes having at least l request in it, to prevent route reduction
-    if (route.get_num_service_nodes() >= request_info_t<i_t, REQUEST>::size()) {
+    // node. By default only record routes that still have at least one request after ejection,
+    // to prevent route-count reduction. Bypass that guard when the caller has opted in via
+    // SolverSettings::skip_vehicle_minimization — route reduction is the intended behaviour
+    // there.
+    const bool keeps_min_request_count =
+      route.get_num_service_nodes() >= request_info_t<i_t, REQUEST>::size();
+    if (keeps_min_request_count || move_candidates.allow_route_reduction) {
       const auto special_node_id = solution.get_num_orders() + solution.n_routes;
       const auto cost_difference =
         route.get_cost(move_candidates.include_objective, move_candidates.weights) -

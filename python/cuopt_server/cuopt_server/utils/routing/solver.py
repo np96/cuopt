@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import time
@@ -367,6 +367,13 @@ def create_solver(optimization_data: OptimizationDataModel):
     if optimization_data.solver_config["error_logging"] is not None:
         solver_settings.set_error_logging_mode(
             optimization_data.solver_config["error_logging"]
+        )
+    if (
+        optimization_data.solver_config["skip_vehicle_minimization"]
+        is not None
+    ):
+        solver_settings.set_skip_vehicle_minimization(
+            optimization_data.solver_config["skip_vehicle_minimization"]
         )
 
     return warnings, solver_settings

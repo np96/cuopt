@@ -33,6 +33,8 @@ class routing_resource_t {
       ges(dummy_sol, &ls)  // the ls will be dangled as this object will be moved to the shared pool
   {
     raft::common::nvtx::range fun_scope("routing_resource_t");
+    ls.move_candidates.allow_route_reduction =
+      problem_->solver_settings_ptr->skip_vehicle_minimization_;
   }
 
   local_search_t<i_t, f_t, Solution::request_type> ls;

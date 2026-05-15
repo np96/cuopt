@@ -48,6 +48,61 @@ def test_solver_settings_getters():
     assert s.get_time_limit() == time_limit
 
 
+def test_skip_vehicle_minimization_default():
+    s = routing.SolverSettings()
+    assert s.get_skip_vehicle_minimization() is False
+
+
+def test_skip_vehicle_minimization_setter():
+    s = routing.SolverSettings()
+    s.set_skip_vehicle_minimization(True)
+    assert s.get_skip_vehicle_minimization() is True
+    s.set_skip_vehicle_minimization(False)
+    assert s.get_skip_vehicle_minimization() is False
+
+
+def test_skip_vehicle_minimization_solve():
+    """Cost matrix where the cost optimum requires multiple vehicles.
+
+    depot<->order edges cost 1, order<->order edges cost 100. A 1-route
+    solution costs ~302; a 4-route solution costs ~8. Without the flag the
+    solver minimises routes first and gets trapped at 1 route; with the
+    flag enabled it lands near the 4-route optimum.
+    """
+    n_locations = 5  # depot + 4 order locations
+    n_orders = 4
+    n_vehicles = 8
+
+    cost_np = np.full((n_locations, n_locations), 100.0, dtype=np.float32)
+    np.fill_diagonal(cost_np, 0.0)
+    cost_np[0, 1:] = 1.0
+    cost_np[1:, 0] = 1.0
+    cost = cudf.DataFrame(cost_np, dtype=np.float32)
+
+    dm = routing.DataModel(n_locations, n_vehicles, n_orders)
+    dm.add_cost_matrix(cost)
+    dm.set_order_locations(cudf.Series([1, 2, 3, 4], dtype=np.int32))
+
+    # Default behaviour: route minimisation traps the solver at 1 route.
+    s_default = routing.SolverSettings()
+    s_default.set_time_limit(5)
+    sol_default = routing.Solve(dm, s_default)
+    assert sol_default.get_status() == 0
+    assert sol_default.get_vehicle_count() < n_orders
+    assert sol_default.get_total_objective() > 100.0
+
+    # With the flag the solver seeds at 4 routes and stays there.
+    s_skip = routing.SolverSettings()
+    s_skip.set_time_limit(5)
+    s_skip.set_skip_vehicle_minimization(True)
+    assert s_skip.get_skip_vehicle_minimization() is True
+    sol_skip = routing.Solve(dm, s_skip)
+    assert sol_skip.get_status() == 0
+    assert sol_skip.get_vehicle_count() == n_orders
+    assert sol_skip.get_total_objective() < 50.0
+    assert sol_skip.get_total_objective() < sol_default.get_total_objective()
+
+
 def test_dump_config():
     """Test SolverSettings solve with config file"""
     s = routing.SolverSettings()

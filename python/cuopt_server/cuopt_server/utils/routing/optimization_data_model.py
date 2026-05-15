@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import numpy as np
@@ -123,6 +123,7 @@ class OptimizationDataModel:
             "config_file": None,
             "verbose_mode": None,
             "error_logging": None,
+            "skip_vehicle_minimization": None,
         }
 
     def get_cost_waypoint_graph(self):
@@ -973,6 +974,7 @@ class OptimizationDataModel:
         config_file,
         verbose_mode,
         error_logging,
+        skip_vehicle_minimization=None,
     ):
         is_valid = validate_solver_config(
             time_limit,
@@ -1003,6 +1005,10 @@ class OptimizationDataModel:
                 self.solver_config["verbose_mode"] = verbose_mode
             if error_logging is not None:
                 self.solver_config["error_logging"] = error_logging
+            if skip_vehicle_minimization is not None:
+                self.solver_config["skip_vehicle_minimization"] = (
+                    skip_vehicle_minimization
+                )
 
         return is_valid
 
@@ -1013,6 +1019,7 @@ class OptimizationDataModel:
         config_file,
         verbose_mode,
         error_logging,
+        skip_vehicle_minimization=None,
     ):
         is_valid = validate_solver_config(
             time_limit,
@@ -1044,5 +1051,9 @@ class OptimizationDataModel:
                 self.solver_config["verbose_mode"] = verbose_mode
             if error_logging is not None:
                 self.solver_config["error_logging"] = error_logging
+            if skip_vehicle_minimization is not None:
+                self.solver_config["skip_vehicle_minimization"] = (
+                    skip_vehicle_minimization
+                )
 
         return is_valid

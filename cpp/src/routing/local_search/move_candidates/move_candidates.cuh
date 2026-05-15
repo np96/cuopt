@@ -432,6 +432,9 @@ class move_candidates_t {
     infeasible_cost_t weights;
     infeasible_cost_t selection_weights;
     bool include_objective;
+    // When true, allow LS moves that empty a route (i.e. permit route-count
+    // reduction). Driven by SolverSettings::skip_vehicle_minimization.
+    bool allow_route_reduction;
     typename viables_t<i_t, f_t>::view_t viables;
     raft::device_span<uint8_t> route_compatibility;
     typename scross_move_candidates_t<i_t, f_t>::view_t scross_move_candidates;
@@ -481,6 +484,7 @@ class move_candidates_t {
     v.random_move_candidates        = random_move_candidates.view();
     v.nodes_to_search               = nodes_to_search.view();
     v.include_objective             = include_objective;
+    v.allow_route_reduction         = allow_route_reduction;
     v.number_of_blocks_per_ls_route = number_of_blocks_per_ls_route;
     return v;
   }
@@ -496,6 +500,7 @@ class move_candidates_t {
   infeasible_cost_t weights;
   infeasible_cost_t selection_weights;
   bool include_objective;
+  bool allow_route_reduction{false};
   // viable structure
   const viables_t<i_t, f_t>& viables;
   // route_compatibility, this is dynamic and is filled in place

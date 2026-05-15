@@ -1,6 +1,6 @@
 /* clang-format off */
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /* clang-format on */
@@ -31,6 +31,7 @@
 #include <thrust/transform.h>
 #include <thrust/tuple.h>
 #include <thrust/unique.h>
+#include <algorithm>
 #include <chrono>
 #include <limits>
 #include <numeric>
@@ -68,6 +69,11 @@ assignment_t<i_t> solver_t<i_t, f_t>::solve()
   auto target_vehicles = -1;
   if (data_view_ptr_->get_fleet_size() == data_view_ptr_->get_min_vehicles()) {
     target_vehicles = data_view_ptr_->get_min_vehicles();
+  } else if (settings_.skip_vehicle_minimization_) {
+    // Skip the route-minimization phase: seed with the maximum useful number
+    // of routes (one per order, capped by fleet size). Local search then
+    // minimizes the configured objective; routes left empty count as unused.
+    target_vehicles = std::min(data_view_ptr_->get_fleet_size(), data_view_ptr_->get_num_orders());
   }
 
   const bool is_pdp = data_view_ptr_->get_pickup_delivery_pair().first != nullptr;

@@ -1481,6 +1481,50 @@ class SolverSettings(vehicle_routing_wrapper.SolverSettings):
         super().dump_config_file(file_name)
 
     @catch_cuopt_exception
+    def set_skip_vehicle_minimization(self, skip):
+        """
+        Skip the dedicated vehicle-count minimization phase.
+
+        By default, cuOpt routing first searches to minimize the number of
+        vehicles (routes) used, then optimizes the configured objective
+        (cost, travel time, etc.). When this flag is enabled, the
+        vehicle-count minimization phase is skipped: the solver starts
+        directly from a route count of ``min(fleet_size, num_orders)`` and
+        uses the available time to minimize the configured objective. Routes
+        left empty by local search count as unused vehicles, so the final
+        vehicle count can be any value up to ``min(fleet_size, num_orders)``.
+
+        Use this when you have enough vehicles and only care about minimizing
+        total cost or travel time, without preferring fewer vehicles. This
+        replaces the historical workaround of pairing each order with a
+        placeholder vehicle and dummy zero-cost order.
+
+        Parameters
+        ----------
+        skip : bool
+            True to skip vehicle-count minimization. Default is False.
+
+        Notes
+        -----
+        If ``min_vehicles == fleet_size`` (vehicle count is already pinned via
+        ``DataModel.set_min_vehicles``), this setting has no effect.
+
+        Examples
+        --------
+        >>> from cuopt import routing
+        >>> settings = routing.SolverSettings()
+        >>> settings.set_skip_vehicle_minimization(True)
+        """
+        super().set_skip_vehicle_minimization(skip)
+
+    @catch_cuopt_exception
+    def get_skip_vehicle_minimization(self):
+        """
+        Returns True if vehicle-count minimization will be skipped.
+        """
+        return super().get_skip_vehicle_minimization()
+
+    @catch_cuopt_exception
     def get_time_limit(self):
         """
         Returns solving time set.
